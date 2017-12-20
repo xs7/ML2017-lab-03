@@ -14,15 +14,12 @@ def dealimage(img_path):
     print("dealimage")
     #img_path = './datasets/original/nonface'
     image_list = [os.path.join(img_path, f) for f in os.listdir(img_path)]
-
-    img_face = []
-    print(type(img_face))
-    print(type(np.reshape(img_face,len(img_face))))
+    img = []
     for i in range(len(image_list)):
         img_temp = Image.open(image_list[i]).convert('L')
         img_temp.thumbnail((24, 24))
-        img_face.append(np.array(img_temp))
-    return img_face
+        img.append(np.array(img_temp))
+    return img
 
 
 #提取图片中的特征
@@ -33,15 +30,14 @@ def extractfeature(img_face,filename):
         f = NPDFeature(img_face[i])
         f.extract()
         feature_list.append(f.features)
-    print(len(feature_list))
     #output = open('nonface_feature','wb')
-    output = open(filename,'wb')
+    output = open(filename, 'wb')
     pickle.dump(feature_list, output)
     print("dump over")
 
 
 # 打乱人脸和非人脸数据
-def shuffle_array(X,y):
+def shuffle_array(X, y):
     randomlist = np.arange(X.shape[0])
     np.random.shuffle(randomlist)
     X_random = X[randomlist]
@@ -49,6 +45,20 @@ def shuffle_array(X,y):
     return X_random, y_random
 
 if __name__ == "__main__":
+    #如果特征文件不存在，则重新计算特征得到特征文件
+    if os.path.exists('face_feature'):
+        print("get face_feature")
+    else:
+        print("don't found face_feature")
+        img_face = dealimage('./datasets/original/face')
+        extractfeature(img_face,'face_feature')
+
+    if os.path.exists('nonface_feature'):
+        print("get nonface_feature")
+    else:
+        print("don't found nonface_feature")
+        img_nonface = dealimage('./datasets/original/nonface')
+        extractfeature(img_nonface,'nonface_feature')
 
     input = open('nonface_feature', 'rb')
     nonface_data = pickle.load(input)
@@ -69,9 +79,7 @@ if __name__ == "__main__":
     abc.fit(X_train, y_train)
 
     y_test_predict = abc.predict(X_test, 0)
-    result = np.zeros(X_test.shape[0])
-    result[y_test_predict == y_test] = 1
-    print(sum(result)/result.shape[0])
+
     target_names = ['face', 'nonface']
     print(classification_report(y_test, y_test_predict, target_names=target_names))
     with open('report.txt', 'w') as f:
